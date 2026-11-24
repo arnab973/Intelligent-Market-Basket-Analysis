@@ -1,0 +1,10 @@
+# Ignore Python ML scripts & backend files so Vercel doesn't detect them as serverless functions
+main.py
+serve_website.py
+generate_enriched_data.py
+requirements.txt
+src/
+dataset/
+notebooks/
+tests/
+outputs/
