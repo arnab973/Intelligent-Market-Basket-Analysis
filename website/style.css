@@ -1,0 +1,333 @@
+/* =========================================================================
+   BasketIQ - Premium 3D Futuristic AI Analytics Dashboard Design System
+   ========================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --neon-blue: #38bdf8;
+  --neon-cyan: #06b6d4;
+  --neon-purple: #a855f7;
+  --neon-emerald: #10b981;
+  --neon-amber: #f59e0b;
+  --bg-deep: #030712;
+  --bg-surface: #070d1e;
+  --bg-surface-elevated: #0d152a;
+  --bg-card: rgba(13, 20, 38, 0.72);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(56, 189, 248, 0.4);
+  --border-purple-glow: rgba(168, 85, 247, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-deep);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 45%);
+  color: #f1f5f9;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  margin: 0;
+  padding: 0;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(3, 7, 18, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.5);
+}
+
+/* 3D WebGL Background Canvas */
+#webgl-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* Hero 3D Shopping Basket Canvas Container */
+#hero-basket-3d {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  cursor: grab;
+  touch-action: pan-y; /* Allows natural vertical page scrolling on touchscreens */
+}
+#hero-basket-3d:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 640px) {
+  #hero-basket-3d {
+    height: 280px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  #hero-basket-3d {
+    height: 340px;
+  }
+}
+
+/* Glassmorphism 2.0 */
+.glass-nav {
+  background: rgba(7, 13, 30, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 20px 40px -15px rgba(56, 189, 248, 0.25), 0 0 20px 0 rgba(56, 189, 248, 0.1);
+  transform: translateY(-3px);
+}
+
+.glass-card-purple:hover {
+  border-color: var(--border-purple-glow);
+  box-shadow: 0 20px 40px -15px rgba(168, 85, 247, 0.25), 0 0 20px 0 rgba(168, 85, 247, 0.1);
+  transform: translateY(-3px);
+}
+
+/* 3D Tilt Card Container & Parallax Inner */
+.tilt-card {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.tilt-inner {
+  transform: translateZ(30px);
+  transition: transform 0.2s ease-out;
+}
+
+.tilt-icon {
+  transform: translateZ(45px);
+}
+
+/* Floating 3D Micro-animation */
+.float-card-slow {
+  animation: floatCard 6s ease-in-out infinite;
+}
+
+.float-card-delayed {
+  animation: floatCard 6s ease-in-out 3s infinite;
+}
+
+@keyframes floatCard {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0.8deg);
+  }
+}
+
+/* Neon Gradient Text */
+.text-gradient {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 35%, #c084fc 70%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glowing Badges */
+.badge-neon {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  box-shadow: 0 0 15px -3px rgba(56, 189, 248, 0.3);
+}
+
+.badge-purple {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+  box-shadow: 0 0 15px -3px rgba(168, 85, 247, 0.3);
+}
+
+.badge-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  box-shadow: 0 0 15px -3px rgba(16, 185, 129, 0.3);
+}
+
+.badge-amber {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+  box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.3);
+}
+
+/* Animated Border Gradient Pill */
+.glow-pill {
+  position: relative;
+  background: #070d1e;
+  border-radius: 9999px;
+  z-index: 1;
+}
+
+.glow-pill::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  background: linear-gradient(90deg, #38bdf8, #818cf8, #a855f7, #34d399, #38bdf8);
+  background-size: 300% 100%;
+  border-radius: 9999px;
+  z-index: -1;
+  animation: borderRotate 4s linear infinite;
+}
+
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* 3D Button Hover Effects */
+.btn-3d {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 25px -4px rgba(56, 189, 248, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -4px rgba(56, 189, 248, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-3d:active {
+  transform: translateY(1px);
+}
+
+.btn-3d-purple {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 25px -4px rgba(168, 85, 247, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-3d-purple:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -4px rgba(168, 85, 247, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Subview Page Transitions */
+.subview {
+  display: none;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.subview.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* View Sections */
+.view-section {
+  transition: opacity 0.3s ease;
+}
+
+/* Mobile Off-Canvas Drawer Navigation */
+.mobile-nav-backdrop {
+  background: rgba(3, 7, 18, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.mobile-nav-drawer {
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-nav-drawer.open {
+  transform: translateX(0);
+}
+
+/* Custom Modern Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.1);
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  transition: transform 0.15s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Number Count-Up Animation */
+.count-up {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search Modal Overlay */
+.search-modal-backdrop {
+  background: rgba(3, 7, 18, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}

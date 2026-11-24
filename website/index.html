@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Intelligent Market Basket Analysis & Product Association Discovery — BasketIQ 3D</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              400: '#38bdf8',
+              500: '#0284c7',
+              600: '#0369a1',
+            },
+            surface: {
+              800: '#0b1329',
+              850: '#070d1e',
+              900: '#030712'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js 4.x -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Three.js (3D WebGL Engine) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- VanillaTilt (3D Interactive Parallax Depth) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom CSS Design System -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-surface-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white relative">
+
+  <!-- Interactive 3D WebGL Background Canvas -->
+  <div id="webgl-container"></div>
+
+  <!-- Global Search Modal (Ctrl + K) -->
+  <div id="search-modal" class="fixed inset-0 z-50 search-modal-backdrop hidden flex items-start justify-center pt-20 px-4">
+    <div class="max-w-2xl w-full glass-card p-6 rounded-3xl border border-white/20 shadow-2xl relative">
+      <div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+        <i data-lucide="search" class="w-5 h-5 text-cyan-400"></i>
+        <input type="text" id="global-search-input" placeholder="Search products, association rules, or itemsets (e.g., Avocado, Pepper, Seltzer)..." oninput="handleGlobalSearch(event)" class="w-full bg-transparent text-sm text-white placeholder-slate-400 focus:outline-none">
+        <button onclick="closeSearchModal()" class="px-2 py-1 text-xs text-slate-400 hover:text-white bg-white/5 rounded-lg border border-white/10">ESC</button>
+      </div>
+      <div id="search-results-container" class="max-h-80 overflow-y-auto space-y-2 text-xs">
+        <p class="text-slate-400 text-center py-6">Type product names or keywords to instantly discover matching association rules and catalog items.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Overlay -->
+  <div id="mobile-drawer-backdrop" class="fixed inset-0 z-50 mobile-nav-backdrop hidden transition-opacity" onclick="closeMobileNav()"></div>
+  <aside id="mobile-drawer" class="fixed top-0 bottom-0 left-0 w-80 max-w-[85vw] z-50 bg-surface-850 border-r border-white/10 mobile-nav-drawer p-5 sm:p-6 flex flex-col justify-between overflow-y-auto">
+    <div>
+      <div class="flex items-center justify-between pb-5 border-b border-white/10 mb-5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30">
+            <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="text-lg font-extrabold text-white">Basket<span class="text-gradient">IQ</span></span>
+            <span class="text-[9px] block text-cyan-400 font-bold uppercase tracking-wider">Track C • Project C2</span>
+          </div>
+        </div>
+        <button onclick="closeMobileNav()" class="p-2 text-slate-400 hover:text-white rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Landing Navigation Section -->
+      <div class="mb-5 pb-4 border-b border-white/10">
+        <span class="text-[10px] uppercase font-bold tracking-wider text-cyan-400 px-3 block mb-2">Landing Sections</span>
+        <div class="space-y-1">
+          <a href="#features" onclick="scrollToSection('features', event)" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+            <span>Architecture Modules</span>
+          </a>
+          <a href="#insights" onclick="scrollToSection('insights', event)" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            <span>Affinity Rules</span>
+          </a>
+          <a href="#benchmarks" onclick="scrollToSection('benchmarks', event)" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+            <span>Apriori vs FP-Growth</span>
+          </a>
+          <a href="#dataset" onclick="scrollToSection('dataset', event)" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i>
+            <span>3.42M Dataset Audit</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Dashboard Navigation Section -->
+      <div>
+        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 px-3 block mb-2">Live Portal Navigation</span>
+        <nav class="space-y-1" id="mobile-nav-links">
+          <a href="#/dashboard" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+            <span>Executive Overview</span>
+          </a>
+          <a href="#/dataset" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="database" class="w-4 h-4 text-blue-400"></i>
+            <span>Dataset Deep Dive</span>
+          </a>
+          <a href="#/products" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+            <span>Product Insights</span>
+          </a>
+          <a href="#/itemsets" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="layers" class="w-4 h-4 text-teal-400"></i>
+            <span>Frequent Itemsets</span>
+          </a>
+          <a href="#/rules" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="network" class="w-4 h-4 text-purple-400"></i>
+            <span>Association Rules</span>
+          </a>
+          <a href="#/benchmark" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="cpu" class="w-4 h-4 text-amber-400"></i>
+            <span>Algorithm Battle Arena</span>
+          </a>
+          <a href="#/miner" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+            <span>Custom Dataset Miner</span>
+          </a>
+          <a href="#/simulator" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-400"></i>
+            <span>Smart Recommender</span>
+          </a>
+          <a href="#/reports" onclick="closeMobileNav()" class="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+            <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+            <span>Technical Reports</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="border-t border-white/10 pt-4 mt-4 space-y-2">
+      <button onclick="quickDemoLogin(); closeMobileNav();" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/20 transition-all">
+        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i>
+        <span>One-Click Demo Access</span>
+      </button>
+      <button onclick="handleLogout(); closeMobileNav();" class="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20 transition-all">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+        <span>Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 1: 3D HERO LANDING PAGE (#/) -->
+  <!-- ========================================================================= -->
+  <div id="view-landing" class="view-section flex-1 flex flex-col relative z-10">
+    <!-- Landing Navbar -->
+    <header class="sticky top-0 z-40 glass-nav">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <a href="#/" class="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform">
+            <i data-lucide="shopping-bag" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div>
+            <span class="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-1.5 sm:gap-2">
+              Basket<span class="text-gradient">IQ</span>
+              <span class="text-[9px] uppercase font-bold tracking-widest bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full border border-cyan-500/30">C2 3D</span>
+            </span>
+            <p class="text-[9px] sm:text-[10px] text-slate-400 font-medium hidden sm:block">Market Basket Intelligence</p>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-slate-300">
+          <a href="#features" onclick="scrollToSection('features', event)" class="hover:text-cyan-400 transition-colors">Architecture</a>
+          <a href="#insights" onclick="scrollToSection('insights', event)" class="hover:text-cyan-400 transition-colors">Affinity Rules</a>
+          <a href="#benchmarks" onclick="scrollToSection('benchmarks', event)" class="hover:text-cyan-400 transition-colors">Apriori vs FP-Growth</a>
+          <a href="#dataset" onclick="scrollToSection('dataset', event)" class="hover:text-cyan-400 transition-colors">3.42M Dataset</a>
+        </nav>
+
+        <!-- Auth CTAs -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="#/login" class="hidden sm:inline-block px-3 py-2 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white transition-colors">
+            Log In
+          </a>
+          <a href="#/signup" class="hidden sm:flex btn-3d px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl items-center gap-1.5 shadow-cyan-500/25">
+            <span>Get Started</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="quickDemoLogin()" class="sm:hidden btn-3d px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl flex items-center gap-1 shadow-emerald-500/20">
+            <i data-lucide="zap" class="w-3 h-3 text-amber-300"></i>
+            <span>Demo</span>
+          </button>
+          <!-- Mobile Menu Trigger -->
+          <button onclick="openMobileNav()" aria-label="Open Navigation" class="md:hidden p-2 text-slate-300 hover:text-white rounded-lg">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 3D Hero Section -->
+    <main class="flex-1">
+      <section class="relative pt-12 pb-20 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          <!-- Top Badge -->
+          <div class="text-center mb-6">
+            <div class="inline-flex items-center gap-2 px-5 py-2 rounded-full glow-pill text-xs font-bold text-cyan-300 border border-cyan-500/40">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              Academic Data Science Project C2 • Instacart Market Basket Analysis
+            </div>
+          </div>
+
+          <!-- Hero Heading & 3D Interactive Canvas Grid -->
+          <div class="grid lg:grid-cols-12 gap-8 items-center text-left">
+            <div class="lg:col-span-7 text-center lg:text-left">
+              <h1 class="text-3xl sm:text-5xl lg:text-7xl font-black tracking-tight text-white leading-[1.14]">
+                Intelligent Market <span class="text-gradient">Basket Analysis</span>
+              </h1>
+              
+              <p class="mt-3 sm:mt-4 text-base sm:text-lg lg:text-xl font-medium text-cyan-300">
+                Discover Hidden Product Relationships with AI-Powered Association Rule Mining
+              </p>
+
+              <p class="mt-3 sm:mt-4 text-xs sm:text-sm lg:text-base text-slate-300 max-w-2xl leading-relaxed">
+                Empirical algorithmic benchmarking of Apriori and FP-Growth, 100% itemset parity verification, and predictive bundle discovery across <span class="text-white font-bold">3.42 million authentic customer transactions</span>.
+              </p>
+
+              <!-- Action Buttons (Responsive on Mobile) -->
+              <div class="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 w-full">
+                <a href="#/dashboard" class="btn-3d px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-xl flex items-center justify-center gap-2">
+                  <i data-lucide="sparkles" class="w-4 h-4 sm:w-5 sm:h-5 text-cyan-200"></i>
+                  <span>Explore Analytics</span>
+                </a>
+                <button onclick="quickDemoLogin()" class="px-6 sm:px-7 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold glass-card hover:border-cyan-400/50 text-slate-100 transition-all flex items-center justify-center gap-2">
+                  <i data-lucide="zap" class="w-4 h-4 sm:w-5 sm:h-5 text-amber-400"></i>
+                  <span>One-Click Demo Access</span>
+                </button>
+              </div>
+
+              <!-- Quick Mini-Stats Badges -->
+              <div class="mt-6 sm:mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-2.5 sm:gap-3 text-xs text-slate-400 font-semibold">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  Zero Data Fabrication
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <i data-lucide="shield-check" class="w-4 h-4 text-cyan-400"></i>
+                  100% Itemset Parity
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+                  27.1 GiB RAM Mitigated
+                </span>
+              </div>
+            </div>
+
+            <!-- Right Column: Interactive 3D Shopping Basket & Orbiting Groceries Canvas (Mobile Optimized) -->
+            <div class="lg:col-span-5 relative flex flex-col items-center justify-center mt-4 lg:mt-0 w-full">
+              <div class="relative w-full max-w-md sm:max-w-lg h-[280px] sm:h-[340px] lg:h-[420px] glass-card p-2 rounded-3xl border border-cyan-500/30 overflow-hidden shadow-2xl shadow-cyan-500/10">
+                <div class="absolute top-3 left-3 z-20 flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] font-bold text-cyan-300 uppercase tracking-wider bg-slate-900/80 px-2 sm:px-2.5 py-1 rounded-full border border-white/10">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                  Interactive 3D WebGL Model • Drag 360°
+                </div>
+                <!-- 3D Canvas Mount Point -->
+                <div id="hero-basket-3d" class="w-full h-full"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D Tilt Stats Cards Grid (4 Cards - Responsive) -->
+          <div class="mt-12 sm:mt-16 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 max-w-6xl mx-auto">
+            
+            <div class="tilt-card glass-card p-4 sm:p-6 text-center relative overflow-hidden" data-tilt data-tilt-max="12" data-tilt-glare="true" data-tilt-max-glare="0.25">
+              <div class="tilt-inner">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 mx-auto flex items-center justify-center mb-2.5 sm:mb-3 tilt-icon">
+                  <i data-lucide="database" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-black text-white tracking-tight count-up" data-target="3421083">3,421,083</div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1 font-bold">Total Orders</div>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-4 sm:p-6 text-center relative overflow-hidden" data-tilt data-tilt-max="12" data-tilt-glare="true" data-tilt-max-glare="0.25">
+              <div class="tilt-inner">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 mx-auto flex items-center justify-center mb-2.5 sm:mb-3 tilt-icon">
+                  <i data-lucide="users" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-black text-white tracking-tight count-up" data-target="206209">206,209</div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1 font-bold">Unique Customers</div>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-4 sm:p-6 text-center relative overflow-hidden" data-tilt data-tilt-max="12" data-tilt-glare="true" data-tilt-max-glare="0.25">
+              <div class="tilt-inner">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center mb-2.5 sm:mb-3 tilt-icon">
+                  <i data-lucide="tag" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-black text-white tracking-tight count-up" data-target="49688">49,688</div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1 font-bold">Catalog Products</div>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-4 sm:p-6 text-center relative overflow-hidden" data-tilt data-tilt-max="12" data-tilt-glare="true" data-tilt-max-glare="0.25">
+              <div class="tilt-inner">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-500/10 text-amber-400 mx-auto flex items-center justify-center mb-2.5 sm:mb-3 tilt-icon">
+                  <i data-lucide="sparkles" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </div>
+                <div class="text-xl sm:text-3xl font-black text-white tracking-tight count-up" data-target="346">346</div>
+                <div class="text-[10px] sm:text-xs uppercase tracking-wider text-slate-400 mt-1 font-bold">Mined Rules</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- 3D Feature Grid -->
+      <section id="features" class="py-20 border-t border-white/10 relative z-10 bg-slate-950/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="text-xs uppercase tracking-widest font-extrabold text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full border border-cyan-400/20">End-to-End Pipeline</span>
+            <h2 class="text-3xl sm:text-4xl font-black text-white mt-3">Advanced Retail Data Science Modules</h2>
+            <p class="text-slate-400 mt-2 text-sm sm:text-base">Designed and optimized for multi-million row grocery transaction analysis.</p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6 sm:gap-8">
+            
+            <div class="tilt-card glass-card p-8 rounded-3xl" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white flex items-center justify-center mb-6 shadow-lg shadow-cyan-500/30">
+                  <i data-lucide="bar-chart-2" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Exploratory Analytics</h3>
+                <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                  Interactive multi-chart analysis across 21 departments and 134 aisles. Discovered Sunday/Monday shopping peaks and 7/14/21/30 day replenishment cycles.
+                </p>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-8 rounded-3xl" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center mb-6 shadow-lg shadow-purple-500/30">
+                  <i data-lucide="cpu" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Apriori vs FP-Growth Arena</h3>
+                <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                  Empirical benchmarks proving 100% mathematical itemset parity while demonstrating FP-Tree recursive mining speed advantages over candidate generation.
+                </p>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-8 rounded-3xl" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
+                  <i data-lucide="shopping-cart" class="w-7 h-7"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Smart Recommender Engine</h3>
+                <p class="text-slate-400 text-xs sm:text-sm leading-relaxed">
+                  Real-time e-commerce simulator matching customer cart items against mined association rules, predicting conversions and calculating affinity Lift multipliers.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- High Affinity Rules Section -->
+      <section id="insights" class="py-20 border-t border-white/10 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-16">
+            <span class="text-xs uppercase tracking-widest font-extrabold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">Market Basket Synergy</span>
+            <h2 class="text-3xl sm:text-4xl font-black text-white mt-3">High-Affinity Discovered Association Rules</h2>
+            <p class="text-slate-400 mt-2 text-sm sm:text-base">Real rules mined from 131,209 authentic customer transactions with zero data fabrication.</p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6">
+            <!-- 3D Rule Card 1 -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-amber-500" data-tilt data-tilt-max="12">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-amber px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Top Lift (20.72x)</span>
+                  <span class="text-xs text-slate-400">Produce Dept</span>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-2">Yellow Bell Pepper &rarr; Orange Bell Pepper</h4>
+                <p class="text-xs text-slate-300 mb-4 leading-relaxed">Shoppers carting yellow bell peppers are over 20 times more likely to also add orange bell peppers for mixed pepper dishes.</p>
+                <div class="grid grid-cols-2 gap-2 text-xs border-t border-white/10 pt-3">
+                  <div><span class="text-slate-400">Confidence:</span> <b class="text-white">34.0%</b></div>
+                  <div><span class="text-slate-400">Lift:</span> <b class="text-amber-400 font-extrabold text-sm">20.72x</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3D Rule Card 2 -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-cyan-500" data-tilt data-tilt-max="12">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-neon px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Beverage Bundle (8.70x)</span>
+                  <span class="text-xs text-slate-400">Beverages Dept</span>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-2">Lime Sparkling Water &rarr; Grapefruit Seltzer</h4>
+                <p class="text-xs text-slate-300 mb-4 leading-relaxed">Strong multi-flavor seltzer exploration. Suggests multi-pack promotional cross-selling bundles for beverage shoppers.</p>
+                <div class="grid grid-cols-2 gap-2 text-xs border-t border-white/10 pt-3">
+                  <div><span class="text-slate-400">Confidence:</span> <b class="text-white">25.7%</b></div>
+                  <div><span class="text-slate-400">Lift:</span> <b class="text-cyan-400 font-extrabold text-sm">8.70x</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3D Rule Card 3 -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-emerald-500" data-tilt data-tilt-max="12">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-emerald px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Top Confidence (52.1%)</span>
+                  <span class="text-xs text-slate-400">Organic Fruits</span>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-2">{Raspberries, Avocado} &rarr; Organic Bananas</h4>
+                <p class="text-xs text-slate-300 mb-4 leading-relaxed">Over 52% of customers carting organic raspberries and avocados also purchase a bag of organic bananas.</p>
+                <div class="grid grid-cols-2 gap-2 text-xs border-t border-white/10 pt-3">
+                  <div><span class="text-slate-400">Confidence:</span> <b class="text-emerald-400 font-extrabold text-sm">52.1%</b></div>
+                  <div><span class="text-slate-400">Lift:</span> <b class="text-white">3.83x</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Apriori vs FP-Growth Algorithmic Benchmarks Preview (#benchmarks) -->
+      <section id="benchmarks" class="py-16 sm:py-20 border-t border-white/10 relative z-10 bg-slate-950/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <span class="text-xs uppercase tracking-widest font-extrabold text-purple-400 bg-purple-400/10 px-3 py-1 rounded-full border border-purple-400/20">Algorithmic Battle Arena</span>
+            <h2 class="text-2xl sm:text-4xl font-black text-white mt-3">Apriori vs. FP-Growth Algorithmic Benchmarks</h2>
+            <p class="text-slate-400 mt-2 text-xs sm:text-sm leading-relaxed">
+              Empirical execution times and 100% itemset parity verification across 131,209 authentic customer transactions.
+            </p>
+          </div>
+
+          <!-- 3 Comparison Cards Grid -->
+          <div class="grid md:grid-cols-3 gap-6 mb-10">
+            <!-- Card 1: FP-Growth -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-emerald-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-emerald px-2.5 py-1 rounded-full text-[10px] font-bold uppercase">Tree-Based Mining</span>
+                  <span class="text-xs text-emerald-400 font-bold">2.829s @ 0.3%</span>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">FP-Growth Algorithm</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Compresses transactions into a compact Frequent Pattern Tree (FP-Tree). Recursively mines conditional pattern bases with only 2 database passes and zero candidate itemset generation.
+                </p>
+                <div class="border-t border-white/10 pt-3 text-xs space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>Candidate Generation:</span> <b class="text-emerald-400">0 Pairs (Avoided)</b></div>
+                  <div class="flex justify-between"><span>Database Scans:</span> <b class="text-white">Exactly 2</b></div>
+                  <div class="flex justify-between"><span>Speed @ 0.3% Support:</span> <b class="text-emerald-400 font-mono">2.829 sec</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Apriori -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-amber-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-amber px-2.5 py-1 rounded-full text-[10px] font-bold uppercase">Candidate Generation</span>
+                  <span class="text-xs text-amber-400 font-bold">2.786s @ 0.3%</span>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Apriori Algorithm</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Level-wise candidate generation using downward closure. We resolved the 27.1 GiB RAM explosion by pre-filtering non-frequent items, reducing boolean matrix memory to 54.87 MB.
+                </p>
+                <div class="border-t border-white/10 pt-3 text-xs space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>RAM Explosion Mitigated:</span> <b class="text-amber-400">27.1 GB &rarr; 54.8 MB</b></div>
+                  <div class="flex justify-between"><span>Low Memory Chunking:</span> <b class="text-white">Enabled &check;</b></div>
+                  <div class="flex justify-between"><span>Speed @ 0.3% Support:</span> <b class="text-amber-400 font-mono">2.786 sec</b></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 3: 100% Mathematical Parity -->
+            <div class="tilt-card glass-card p-6 rounded-3xl border-l-4 border-cyan-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <div class="flex items-center justify-between mb-4">
+                  <span class="badge-neon px-2.5 py-1 rounded-full text-[10px] font-bold uppercase">Parity Verification</span>
+                  <span class="text-xs text-cyan-400 font-bold">100% Match</span>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Exact Itemset Parity</h3>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                  Both algorithms generate identical frequent itemsets across all support levels: 151 at 1.0%, 255 at 0.7%, 475 at 0.5%, and 950 at 0.3%, deriving 346 high-confidence association rules.
+                </p>
+                <div class="border-t border-white/10 pt-3 text-xs space-y-1.5 text-slate-400">
+                  <div class="flex justify-between"><span>Discovered Rules:</span> <b class="text-cyan-400 font-mono">346 Rules</b></div>
+                  <div class="flex justify-between"><span>Frequent Itemsets:</span> <b class="text-white font-mono">950 Sets</b></div>
+                  <div class="flex justify-between"><span>Mathematical Match:</span> <b class="text-emerald-400">100% Exact &check;</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick CTA to live arena -->
+          <div class="text-center">
+            <a href="#/benchmark" class="btn-3d inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-500/25">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+              <span>Launch Interactive Algorithm Battle Arena &rarr;</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: 3.42M Dataset Schema & Integrity Preview (#dataset) -->
+      <section id="dataset" class="py-16 sm:py-20 border-t border-white/10 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <span class="text-xs uppercase tracking-widest font-extrabold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20">Instacart Portfolio</span>
+            <h2 class="text-2xl sm:text-4xl font-black text-white mt-3">3,421,083 Real-World Orders Audited</h2>
+            <p class="text-slate-400 mt-2 text-xs sm:text-sm leading-relaxed">
+              Full schema inspection and referential integrity audit across 6 relational CSV tables with zero synthetic data.
+            </p>
+          </div>
+
+          <!-- 4 Stats Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
+            <div class="glass-card p-4 sm:p-5 border-l-4 border-cyan-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Total Orders</span>
+              <div class="text-xl sm:text-3xl font-black text-white mt-1">3,421,083</div>
+              <span class="text-[10px] text-cyan-400 font-semibold mt-1 block">Prior + Train Orders</span>
+            </div>
+            <div class="glass-card p-4 sm:p-5 border-l-4 border-indigo-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Unique Customers</span>
+              <div class="text-xl sm:text-3xl font-black text-white mt-1">206,209</div>
+              <span class="text-[10px] text-indigo-400 font-semibold mt-1 block">0 Orphan Records</span>
+            </div>
+            <div class="glass-card p-4 sm:p-5 border-l-4 border-emerald-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Catalog Products</span>
+              <div class="text-xl sm:text-3xl font-black text-white mt-1">49,688</div>
+              <span class="text-[10px] text-emerald-400 font-semibold mt-1 block">21 Depts • 134 Aisles</span>
+            </div>
+            <div class="glass-card p-4 sm:p-5 border-l-4 border-amber-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Missing Values Audit</span>
+              <div class="text-xl sm:text-3xl font-black text-white mt-1">206,209 First Orders</div>
+              <span class="text-[10px] text-amber-400 font-semibold mt-1 block">Nulls = Order Number 1</span>
+            </div>
+          </div>
+
+          <!-- Table preview -->
+          <div class="glass-card p-5 sm:p-6 mb-8 sm:mb-10">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm sm:text-base font-bold text-white">Verified Relational Tables</h3>
+              <span class="text-[11px] text-emerald-400 font-bold">&check; 100% Foreign Key Matches</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center text-xs">
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">orders.csv</div>
+                <div class="text-white font-bold mt-1">3.42M rows</div>
+                <div class="text-[10px] text-slate-400">7 columns</div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">prior_items</div>
+                <div class="text-white font-bold mt-1">32.4M rows</div>
+                <div class="text-[10px] text-slate-400">4 columns</div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">train_items</div>
+                <div class="text-white font-bold mt-1">1.38M rows</div>
+                <div class="text-[10px] text-slate-400">4 columns</div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">products.csv</div>
+                <div class="text-white font-bold mt-1">49.7K rows</div>
+                <div class="text-[10px] text-slate-400">4 columns</div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">aisles.csv</div>
+                <div class="text-white font-bold mt-1">134 rows</div>
+                <div class="text-[10px] text-slate-400">2 columns</div>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900 border border-white/10">
+                <div class="font-mono text-cyan-300 font-bold">depts.csv</div>
+                <div class="text-white font-bold mt-1">21 rows</div>
+                <div class="text-[10px] text-slate-400">2 columns</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA -->
+          <div class="text-center">
+            <a href="#/dataset" class="btn-3d inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-500/25">
+              <i data-lucide="database" class="w-4 h-4"></i>
+              <span>Explore Full Dataset Schema Analysis &rarr;</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 py-10 bg-surface-900/90 text-sm text-slate-400 text-center relative z-10">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+        <div>
+          <b>BasketIQ</b> • Intelligent Market Basket Analysis & Product Association Discovery (Track C, Project C2)
+        </div>
+        <div>
+          Dataset: Instacart Market Basket Analysis (Kaggle) • 3,421,083 Orders Verified
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 2: LOGIN PAGE (#/login) -->
+  <!-- ========================================================================= -->
+  <div id="view-login" class="view-section hidden flex-1 flex items-center justify-center p-4 relative z-10">
+    <div class="max-w-md w-full glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative tilt-card" data-tilt data-tilt-max="8">
+      <div class="text-center mb-6 tilt-inner">
+        <a href="#/" class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 items-center justify-center text-white mb-3 shadow-lg shadow-cyan-500/30">
+          <i data-lucide="shopping-bag" class="w-7 h-7"></i>
+        </a>
+        <h2 class="text-2xl font-black text-white">Researcher Login</h2>
+        <p class="text-slate-400 text-xs mt-1">Sign in to access the Market Basket Intelligence Portal</p>
+      </div>
+
+      <!-- Quick Demo Login Button -->
+      <div class="mb-6">
+        <button type="button" onclick="quickDemoLogin()" class="btn-3d w-full py-3.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="zap" class="w-4 h-4 text-amber-300"></i>
+          <span>One-Click Demo Login (Lead Researcher)</span>
+        </button>
+      </div>
+
+      <div class="relative flex py-2 items-center mb-6">
+        <div class="flex-grow border-t border-white/10"></div>
+        <span class="flex-shrink mx-4 text-[10px] uppercase font-bold tracking-widest text-slate-500">Or enter credentials</span>
+        <div class="flex-grow border-t border-white/10"></div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Email Address</label>
+          <div class="relative">
+            <i data-lucide="mail" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+            <input type="email" id="login-email" required value="researcher@instacart.ai" class="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Password</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+            <input type="password" id="login-password" required value="password123" class="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400">
+          </div>
+        </div>
+
+        <button type="submit" class="btn-3d w-full py-3.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition-all">
+          Sign In
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-slate-400 mt-6">
+        Don't have an account? 
+        <a href="#/signup" class="text-cyan-400 font-bold hover:underline">Sign up for access</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 3: SIGN UP PAGE (#/signup) -->
+  <!-- ========================================================================= -->
+  <div id="view-signup" class="view-section hidden flex-1 flex items-center justify-center p-4 relative z-10">
+    <div class="max-w-md w-full glass-card p-8 rounded-3xl border border-white/10 shadow-2xl relative tilt-card" data-tilt data-tilt-max="8">
+      <div class="text-center mb-6 tilt-inner">
+        <a href="#/" class="inline-flex w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 items-center justify-center text-white mb-3 shadow-lg shadow-cyan-500/30">
+          <i data-lucide="user-plus" class="w-6 h-6"></i>
+        </a>
+        <h2 class="text-2xl font-black text-white">Create Account</h2>
+        <p class="text-slate-400 text-xs mt-1">Join the Market Basket Intelligence Portal</p>
+      </div>
+
+      <form id="signup-form" onsubmit="handleSignupSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Full Name</label>
+          <input type="text" id="signup-name" required placeholder="Dr. Arnab Sen" class="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Email Address</label>
+          <input type="email" id="signup-email" required placeholder="arnab@university.edu" class="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Role / Department</label>
+          <select id="signup-role" class="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+            <option value="Lead Researcher">Lead Researcher</option>
+            <option value="Data Scientist">Data Scientist</option>
+            <option value="Retail Merchandiser">Retail Merchandiser</option>
+            <option value="Academic Evaluator">Academic Evaluator</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase text-slate-300 mb-1">Password</label>
+          <input type="password" id="signup-password" required placeholder="••••••••" class="w-full bg-slate-900/90 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <button type="submit" class="btn-3d w-full py-3.5 px-4 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25 transition-all">
+          Create Account & Launch Portal
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-slate-400 mt-6">
+        Already have an account? 
+        <a href="#/login" class="text-cyan-400 font-bold hover:underline">Log in</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 4: AUTHENTICATED DASHBOARD PORTAL -->
+  <!-- ========================================================================= -->
+  <div id="view-app" class="view-section hidden flex-1 flex min-h-screen relative z-10">
+    
+    <!-- Desktop Sidebar with All Requested Sections -->
+    <aside class="hidden lg:flex w-72 bg-surface-850/95 border-r border-white/10 flex-col z-30 shrink-0 backdrop-blur-xl">
+      <!-- App Brand Header -->
+      <div class="h-20 px-6 flex items-center gap-3 border-b border-white/10">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/25">
+          <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
+            Basket<span class="text-gradient">IQ</span>
+            <span class="text-[9px] uppercase font-bold bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">C2 3D</span>
+          </span>
+          <span class="text-[10px] text-slate-400 font-medium block">Instacart Intelligence</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links (Full 9 Items Requested) -->
+      <nav class="flex-1 px-4 py-5 space-y-1 overflow-y-auto">
+        <a href="#/dashboard" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="dashboard">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-cyan-400"></i>
+          <span>Overview</span>
+        </a>
+
+        <a href="#/dataset" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="dataset">
+          <i data-lucide="database" class="w-4 h-4 text-blue-400"></i>
+          <span>Dataset Analysis</span>
+        </a>
+
+        <a href="#/products" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="products">
+          <i data-lucide="tag" class="w-4 h-4 text-emerald-400"></i>
+          <span>Product Insights</span>
+        </a>
+
+        <a href="#/itemsets" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="itemsets">
+          <i data-lucide="layers" class="w-4 h-4 text-teal-400"></i>
+          <span>Frequent Itemsets</span>
+        </a>
+
+        <a href="#/rules" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="rules">
+          <i data-lucide="network" class="w-4 h-4 text-purple-400"></i>
+          <span>Association Rules</span>
+        </a>
+
+        <a href="#/apriori" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="apriori">
+          <i data-lucide="git-commit" class="w-4 h-4 text-amber-400"></i>
+          <span>Apriori Analysis</span>
+        </a>
+
+        <a href="#/fpgrowth" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="fpgrowth">
+          <i data-lucide="git-branch" class="w-4 h-4 text-emerald-400"></i>
+          <span>FP-Growth Analysis</span>
+        </a>
+
+        <a href="#/benchmark" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="benchmark">
+          <i data-lucide="cpu" class="w-4 h-4 text-amber-400"></i>
+          <span>Algorithm Comparison</span>
+        </a>
+
+        <a href="#/miner" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="miner">
+          <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+          <span>Custom Dataset Miner</span>
+        </a>
+
+        <a href="#/reports" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="reports">
+          <i data-lucide="file-text" class="w-4 h-4 text-cyan-400"></i>
+          <span>Reports</span>
+        </a>
+
+        <div class="pt-3 pb-1">
+          <div class="border-t border-white/10"></div>
+        </div>
+
+        <a href="#/simulator" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-all" data-nav="simulator">
+          <i data-lucide="shopping-cart" class="w-4 h-4 text-emerald-400"></i>
+          <span>Smart Recommender</span>
+        </a>
+      </nav>
+
+      <!-- User Profile & Logout -->
+      <div class="p-4 border-t border-white/10 bg-slate-900/60">
+        <div class="flex items-center justify-between">
+          <a href="#/profile" class="flex items-center gap-3 min-w-0 group">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-xs shrink-0 group-hover:scale-105 transition-transform" id="user-avatar">
+              AS
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-bold text-white truncate" id="user-display-name">Dr. Arnab Sen</p>
+              <p class="text-[10px] text-slate-400 truncate" id="user-role-badge">Lead Researcher</p>
+            </div>
+          </a>
+          <button onclick="handleLogout()" title="Log Out" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto pb-16 lg:pb-0">
+      
+      <!-- Topbar Header -->
+      <header class="h-20 border-b border-white/10 glass-nav px-4 sm:px-8 flex items-center justify-between shrink-0 sticky top-0 z-20">
+        <div class="flex items-center gap-3">
+          <button onclick="openMobileNav()" class="lg:hidden p-2 text-slate-300 hover:text-white rounded-lg">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-white tracking-tight" id="topbar-title">Overview</h2>
+            <span class="text-[10px] font-semibold text-cyan-400 uppercase tracking-widest hidden sm:inline-block" id="topbar-badge">Live Analytics Engine</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Search Bar Trigger Button -->
+          <button onclick="openSearchModal()" class="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/90 hover:bg-slate-800 px-3.5 py-2 rounded-xl border border-white/10 transition-all">
+            <i data-lucide="search" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span class="hidden md:inline">Quick Search...</span>
+            <kbd class="hidden md:inline-block text-[10px] bg-white/10 px-1.5 py-0.5 rounded border border-white/10 text-slate-300">Ctrl K</kbd>
+          </button>
+
+          <!-- Dataset Status Badge -->
+          <div class="hidden sm:flex items-center gap-2 text-xs text-slate-300 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>3,421,083 Records • Ready</span>
+          </div>
+
+          <!-- Quick Test Cart Action -->
+          <a href="#/simulator" class="btn-3d px-3.5 py-2 text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl flex items-center gap-1.5 shadow-emerald-500/20">
+            <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i>
+            <span>Test Cart</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Subview Container -->
+      <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        
+        <!-- SUBVIEW 1: OVERVIEW DASHBOARD -->
+        <div id="subview-dashboard" class="subview active space-y-6 sm:space-y-8">
+          
+          <!-- 5 Animated KPI Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            
+            <div class="tilt-card glass-card p-5 border-l-4 border-cyan-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <span class="text-[11px] uppercase text-slate-400 font-bold tracking-wider">Total Orders</span>
+                <div class="text-2xl sm:text-3xl font-black text-white mt-1 count-up" data-target="3421083">3,421,083</div>
+                <span class="text-[10px] text-cyan-400 font-semibold mt-1 block">Prior + Train Orders</span>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-5 border-l-4 border-indigo-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <span class="text-[11px] uppercase text-slate-400 font-bold tracking-wider">Total Products</span>
+                <div class="text-2xl sm:text-3xl font-black text-white mt-1 count-up" data-target="49688">49,688</div>
+                <span class="text-[10px] text-indigo-400 font-semibold mt-1 block">Across 21 Departments</span>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-5 border-l-4 border-teal-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <span class="text-[11px] uppercase text-slate-400 font-bold tracking-wider">Total Transactions</span>
+                <div class="text-2xl sm:text-3xl font-black text-white mt-1 count-up" data-target="131209">131,209</div>
+                <span class="text-[10px] text-teal-400 font-semibold mt-1 block">Train Market Baskets</span>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-5 border-l-4 border-emerald-500" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <span class="text-[11px] uppercase text-slate-400 font-bold tracking-wider">Frequent Itemsets</span>
+                <div class="text-2xl sm:text-3xl font-black text-white mt-1 count-up" data-target="950">950</div>
+                <span class="text-[10px] text-emerald-400 font-semibold mt-1 block">At min_support = 0.3%</span>
+              </div>
+            </div>
+
+            <div class="tilt-card glass-card p-5 border-l-4 border-amber-500 col-span-2 md:col-span-1" data-tilt data-tilt-max="10">
+              <div class="tilt-inner">
+                <span class="text-[11px] uppercase text-slate-400 font-bold tracking-wider">Association Rules</span>
+                <div class="text-2xl sm:text-3xl font-black text-white mt-1 count-up" data-target="346">346</div>
+                <span class="text-[10px] text-amber-400 font-semibold mt-1 block">Lift up to 20.72x</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Charts Row -->
+          <div class="grid lg:grid-cols-2 gap-6 sm:gap-8">
+            <div class="glass-card p-5 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm sm:text-base font-bold text-white">Top 10 Purchased Products</h3>
+                  <p class="text-[11px] text-slate-400">Green = Certified Organic | Blue = Conventional</p>
+                </div>
+                <span class="text-[11px] text-cyan-400 font-bold">131,209 Baskets</span>
+              </div>
+              <div class="h-64 sm:h-72">
+                <canvas id="chart-top-products-summary"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-card p-5 sm:p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm sm:text-base font-bold text-white">Department Volume Distribution</h3>
+                  <p class="text-[11px] text-slate-400">Produce and Dairy account for 45.2% of market share</p>
+                </div>
+                <span class="text-[11px] text-indigo-400 font-bold">21 Departments</span>
+              </div>
+              <div class="h-64 sm:h-72">
+                <canvas id="chart-departments-summary"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Rules Highlight Table -->
+          <div class="glass-card p-5 sm:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-sm sm:text-base font-bold text-white">Top 5 Discovered Association Rules (Ranked by Lift)</h3>
+                <p class="text-[11px] text-slate-400">Items with highest affinity multipliers over expected random co-occurrence.</p>
+              </div>
+              <a href="#/rules" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 font-bold">
+                <span>View all 346 rules</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </a>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+                    <th class="py-3 px-3">Rule (Antecedent &rarr; Consequent)</th>
+                    <th class="py-3 px-3">Support</th>
+                    <th class="py-3 px-3">Confidence</th>
+                    <th class="py-3 px-3">Lift</th>
+                    <th class="py-3 px-3">Conviction</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300" id="dashboard-rules-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 2: DATASET ANALYSIS -->
+        <div id="subview-dataset" class="subview space-y-6 sm:space-y-8">
+          <!-- Schema KPI Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-card p-5 border-l-4 border-blue-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Core Relational Tables</span>
+              <div class="text-2xl font-black text-white mt-1">6 CSV Files</div>
+              <span class="text-[10px] text-blue-400 mt-1 block">Full Referential Integrity</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-cyan-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Prior + Train Line Items</span>
+              <div class="text-2xl font-black text-white mt-1">33.8M Items</div>
+              <span class="text-[10px] text-cyan-400 mt-1 block">Order-Product Relations</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-emerald-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Orphan Records Found</span>
+              <div class="text-2xl font-black text-white mt-1">0 Orphan Keys</div>
+              <span class="text-[10px] text-emerald-400 mt-1 block">100% Foreign Key Match</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-amber-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Missing Values Handled</span>
+              <div class="text-2xl font-black text-white mt-1">206,209 First Orders</div>
+              <span class="text-[10px] text-amber-400 mt-1 block">Nulls = Order Number 1</span>
+            </div>
+          </div>
+
+          <!-- Dataset Schema Audit Grid -->
+          <div class="glass-card p-6">
+            <h3 class="text-sm sm:text-base font-bold text-white mb-2">Instacart Schema Dimensions & Audit</h3>
+            <p class="text-xs text-slate-400 mb-4">Inspection performed across all primary and junction tables without altering source data.</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-white/10 text-slate-400 uppercase">
+                    <th class="py-3 px-3">Table Name</th>
+                    <th class="py-3 px-3">Rows</th>
+                    <th class="py-3 px-3">Columns</th>
+                    <th class="py-3 px-3">Primary Key / Foreign Keys</th>
+                    <th class="py-3 px-3">Audit Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300">
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">orders.csv</td>
+                    <td class="py-2.5 px-3">3,421,083</td>
+                    <td class="py-2.5 px-3">7</td>
+                    <td class="py-2.5 px-3">order_id &rarr; user_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Verified (100%)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">order_products__prior.csv</td>
+                    <td class="py-2.5 px-3">32,434,489</td>
+                    <td class="py-2.5 px-3">4</td>
+                    <td class="py-2.5 px-3">order_id &rarr; product_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Verified (100%)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">order_products__train.csv</td>
+                    <td class="py-2.5 px-3">1,384,617</td>
+                    <td class="py-2.5 px-3">4</td>
+                    <td class="py-2.5 px-3">order_id &rarr; product_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Target Mining Set</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">products.csv</td>
+                    <td class="py-2.5 px-3">49,688</td>
+                    <td class="py-2.5 px-3">4</td>
+                    <td class="py-2.5 px-3">product_id &rarr; aisle_id, department_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Verified (100%)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">aisles.csv</td>
+                    <td class="py-2.5 px-3">134</td>
+                    <td class="py-2.5 px-3">2</td>
+                    <td class="py-2.5 px-3">aisle_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Verified (100%)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 px-3 font-mono text-cyan-300">departments.csv</td>
+                    <td class="py-2.5 px-3">21</td>
+                    <td class="py-2.5 px-3">2</td>
+                    <td class="py-2.5 px-3">department_id</td>
+                    <td class="py-2.5 px-3 text-emerald-400 font-semibold">Verified (100%)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Temporal & Cadence Charts -->
+          <div class="grid lg:grid-cols-2 gap-6">
+            <div class="glass-card p-6">
+              <h3 class="text-sm sm:text-base font-bold text-white mb-1">Weekly Order Volume (Day of Week)</h3>
+              <p class="text-xs text-slate-400 mb-4">Day 0 = Sunday (600.9K), Day 1 = Monday (587.5K) show weekly grocery restock peaks.</p>
+              <div class="h-64 sm:h-72">
+                <canvas id="chart-dow"></canvas>
+              </div>
+            </div>
+
+            <div class="glass-card p-6">
+              <h3 class="text-sm sm:text-base font-bold text-white mb-1">Customer Reorder Cadence (Interval in Days)</h3>
+              <p class="text-xs text-slate-400 mb-4">Spikes at Day 7, 14, 21, and 30 show predictable weekly, bi-weekly, and monthly cycles.</p>
+              <div class="h-64 sm:h-72">
+                <canvas id="chart-days-since"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 3: PRODUCT INSIGHTS -->
+        <div id="subview-products" class="subview space-y-6 sm:space-y-8">
+          <!-- Top 20 Products Chart -->
+          <div class="glass-card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div>
+                <h3 class="text-base font-bold text-white">Top 20 Most Purchased Products</h3>
+                <p class="text-xs text-slate-400">Green indicates Certified Organic produce (75% of top 20 items are organic).</p>
+              </div>
+              <span class="badge-emerald px-3 py-1 rounded-full text-xs font-bold">15 Organic / 5 Conventional</span>
+            </div>
+            <div class="h-80 sm:h-96">
+              <canvas id="chart-top-20-products"></canvas>
+            </div>
+          </div>
+
+          <!-- Aisles & Co-occurrence Grid -->
+          <div class="grid lg:grid-cols-2 gap-6">
+            <!-- Top 15 Aisles -->
+            <div class="glass-card p-6">
+              <h3 class="text-sm sm:text-base font-bold text-white mb-1">Top 15 Aisles by Order Volume</h3>
+              <p class="text-xs text-slate-400 mb-4">Fresh Vegetables (150.6K) and Fresh Fruits (150.5K) lead catalog demand.</p>
+              <div class="h-72 sm:h-80">
+                <canvas id="chart-aisles"></canvas>
+              </div>
+            </div>
+
+            <!-- Top Product Co-occurrence Pairs -->
+            <div class="glass-card p-6">
+              <h3 class="text-sm sm:text-base font-bold text-white mb-1">Top Product Co-occurrence Pairs</h3>
+              <p class="text-xs text-slate-400 mb-4">Top product pairs co-appearing together in the same market basket.</p>
+              <div class="space-y-2 max-h-80 overflow-y-auto pr-1" id="product-pairs-list">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 4: FREQUENT ITEMSETS -->
+        <div id="subview-itemsets" class="subview space-y-6 sm:space-y-8">
+          <!-- Itemset Length Metric Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-card p-5 border-l-4 border-teal-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Total Frequent Itemsets</span>
+              <div class="text-2xl font-black text-white mt-1">950 Itemsets</div>
+              <span class="text-[10px] text-teal-400 mt-1 block">min_support = 0.3% (394 orders)</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-cyan-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Length 1 (Single Items)</span>
+              <div class="text-2xl font-black text-white mt-1">506 Itemsets</div>
+              <span class="text-[10px] text-cyan-400 mt-1 block">Catalog items &ge; 0.3% support</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-indigo-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Length 2 (Product Pairs)</span>
+              <div class="text-2xl font-black text-white mt-1">426 Itemsets</div>
+              <span class="text-[10px] text-indigo-400 mt-1 block">Two-product frequent bundles</span>
+            </div>
+            <div class="glass-card p-5 border-l-4 border-amber-500">
+              <span class="text-[11px] uppercase text-slate-400 font-bold">Length 3 (Triplets)</span>
+              <div class="text-2xl font-black text-white mt-1">18 Itemsets</div>
+              <span class="text-[10px] text-amber-400 mt-1 block">Tri-product grocery recipes</span>
+            </div>
+          </div>
+
+          <!-- Itemset Length Filter & Table -->
+          <div class="glass-card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 class="text-base font-bold text-white">Frequent Itemsets Explorer</h3>
+                <p class="text-xs text-slate-400">Filter frequent itemsets by bundle size and search items.</p>
+              </div>
+              
+              <!-- Length Filter Buttons -->
+              <div class="flex items-center gap-2">
+                <button onclick="filterItemsetsLength('all')" id="btn-fi-all" class="btn-3d px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-600 text-white">
+                  All (950)
+                </button>
+                <button onclick="filterItemsetsLength(2)" id="btn-fi-len2" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-300">
+                  Pairs (426)
+                </button>
+                <button onclick="filterItemsetsLength(3)" id="btn-fi-len3" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-300">
+                  Triplets (18)
+                </button>
+                <button onclick="filterItemsetsLength(1)" id="btn-fi-len1" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-300">
+                  Single (506)
+                </button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-2xl border border-white/10">
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+                  <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+                    <th class="py-3 px-3">Frequent Itemset</th>
+                    <th class="py-3 px-3">Bundle Length</th>
+                    <th class="py-3 px-3">Support (%)</th>
+                    <th class="py-3 px-3">Support Count (Orders)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300" id="itemsets-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 5: ASSOCIATION RULES -->
+        <div id="subview-rules" class="subview space-y-6">
+          <div class="glass-card p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 class="text-base sm:text-lg font-bold text-white">Association Rule Mining Explorer</h3>
+                <p class="text-xs text-slate-400">Filter, search, and rank all 346 discovered association rules.</p>
+              </div>
+              <button onclick="downloadRulesCSV()" class="btn-3d px-4 py-2.5 text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl flex items-center gap-2 shrink-0 shadow-cyan-500/25">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Export Filtered Rules (CSV)</span>
+              </button>
+            </div>
+
+            <!-- Dynamic Filter Controls -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-900/80 border border-white/10 mb-6">
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">
+                  Min Support: <span id="val-support" class="text-cyan-400 font-extrabold">0.003</span>
+                </label>
+                <input type="range" id="filter-support" min="0.003" max="0.02" step="0.001" value="0.003" oninput="handleRuleFilterChange()" class="w-full accent-cyan-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">
+                  Min Confidence: <span id="val-confidence" class="text-emerald-400 font-extrabold">0.15</span>
+                </label>
+                <input type="range" id="filter-confidence" min="0.15" max="0.55" step="0.05" value="0.15" oninput="handleRuleFilterChange()" class="w-full accent-emerald-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">
+                  Min Lift: <span id="val-lift" class="text-amber-400 font-extrabold">1.0</span>
+                </label>
+                <input type="range" id="filter-lift" min="1.0" max="20.0" step="0.5" value="1.0" oninput="handleRuleFilterChange()" class="w-full accent-amber-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Search Product</label>
+                <input type="text" id="filter-search" placeholder="e.g. Pepper, Banana, Garlic..." oninput="handleRuleFilterChange()" class="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400">
+              </div>
+            </div>
+
+            <!-- Support vs Confidence Scatter Plot (Interactive) -->
+            <div class="mb-6 p-4 rounded-2xl bg-slate-900/60 border border-white/10">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Support vs. Confidence Scatter Plot (Color = Lift Multiplier)</h4>
+                <span class="text-[11px] text-slate-400">Hover points to inspect rules</span>
+              </div>
+              <div class="h-64 sm:h-72">
+                <canvas id="chart-scatter-rules"></canvas>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
+              <span>Showing <b id="rules-count-badge" class="text-white font-bold">0</b> matching association rules</span>
+              <span class="text-[11px]">Ranked by Lift (Affinity Strength)</span>
+            </div>
+
+            <!-- Rules Table -->
+            <div class="overflow-x-auto max-h-[500px] overflow-y-auto rounded-2xl border border-white/10">
+              <table class="w-full text-left text-xs">
+                <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+                  <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+                    <th class="py-3 px-3">Rule (Antecedent &rarr; Consequent)</th>
+                    <th class="py-3 px-3">Support</th>
+                    <th class="py-3 px-3">Confidence</th>
+                    <th class="py-3 px-3">Lift</th>
+                    <th class="py-3 px-3">Leverage</th>
+                    <th class="py-3 px-3">Conviction</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300" id="rules-full-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 6: APRIORI ANALYSIS -->
+        <div id="subview-apriori" class="subview space-y-6 sm:space-y-8">
+          <div class="glass-card p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                <i data-lucide="git-commit" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-bold text-white">Apriori Algorithm (Level-Wise Candidate Generation)</h3>
+                <p class="text-xs text-slate-400">R. Agrawal & R. Srikant (1994) • Downward Closure Principle</p>
+              </div>
+            </div>
+
+            <!-- Step by Step Flowchart Cards -->
+            <div class="grid md:grid-cols-4 gap-4 my-6">
+              <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-cyan-400 block mb-1">Step 1: Scan & Count</span>
+                <h4 class="text-xs font-bold text-white mb-1">1-Itemsets ($C_1 \to L_1$)</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">Counts all 49,688 catalog items. Retains 506 items satisfying min_support &ge; 0.3%.</p>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-indigo-400 block mb-1">Step 2: Cross Join</span>
+                <h4 class="text-xs font-bold text-white mb-1">Candidate Gen ($L_{k-1} \times L_{k-1}$)</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">Generates candidate pairs $C_2$ from frequent 1-itemsets. Prunes pairs with non-frequent subsets.</p>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-teal-400 block mb-1">Step 3: Verification</span>
+                <h4 class="text-xs font-bold text-white mb-1">Support Counting ($L_2, L_3$)</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">Scans transaction matrix to verify candidate frequencies. 426 pairs and 18 triplets confirmed frequent.</p>
+              </div>
+
+              <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-emerald-400 block mb-1">Step 4: Rule Derivation</span>
+                <h4 class="text-xs font-bold text-white mb-1">Confidence & Lift Calculation</h4>
+                <p class="text-[11px] text-slate-400 leading-relaxed">Generates rules $X \to Y$. Filters rules with confidence &ge; 15% and lift &ge; 1.0 (346 rules).</p>
+              </div>
+            </div>
+
+            <!-- 27.1 GiB RAM Explosion & Mitigation Architecture Box -->
+            <div class="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30">
+              <div class="flex items-center gap-2 mb-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                <span>Engineering Highlight: 27.1 GiB RAM Explosion Mitigation</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                When generating candidate itemsets on Instacart's 49,688 products across 131,209 orders, standard MLxtend Apriori attempted to allocate a 3D boolean array of shape <code>(127765, 2, 113705)</code>, which triggers an unrecoverable <code>ArrayMemoryError: Unable to allocate 27.1 GiB</code>.
+              </p>
+              <div class="grid sm:grid-cols-2 gap-3 text-xs text-slate-300">
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-white/10">
+                  <b class="text-white block mb-1">Downward Closure Pre-Filtering:</b>
+                  We applied the anti-monotonicity property before matrix conversion, discarding 49,182 non-frequent items and constraining matrix memory to just <b>54.87 MB</b>.
+                </div>
+                <div class="p-3 rounded-xl bg-slate-900/80 border border-white/10">
+                  <b class="text-white block mb-1">Low Memory Chunking:</b>
+                  Enabled <code>low_memory=True</code> in <code>mlxtend.frequent_patterns.apriori</code> to process candidate pairs iteratively without 3D memory duplication.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 7: FP-GROWTH ANALYSIS -->
+        <div id="subview-fpgrowth" class="subview space-y-6 sm:space-y-8">
+          <div class="glass-card p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <i data-lucide="git-branch" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-base sm:text-lg font-bold text-white">FP-Growth Algorithm (Frequent Pattern Tree)</h3>
+                <p class="text-xs text-slate-400">J. Han, J. Pei, & Y. Yin (2000) • Divide-and-Conquer Tree Mining</p>
+              </div>
+            </div>
+
+            <!-- Architecture Diagram Cards -->
+            <div class="grid md:grid-cols-3 gap-6 my-6">
+              <div class="p-5 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-emerald-400 block mb-1">Architecture Pillar 1</span>
+                <h4 class="text-sm font-bold text-white mb-2">Compact FP-Tree Construction</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Scans the transaction database only twice. First scan counts 1-itemset frequencies. Second scan inserts transactions as shared prefix branches into a compact tree.
+                </p>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-cyan-400 block mb-1">Architecture Pillar 2</span>
+                <h4 class="text-sm font-bold text-white mb-2">Header Table Item Traversal</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Links each frequent item across all branches via pointer chains, allowing O(1) jump access to conditional pattern bases without scanning irrelevant transactions.
+                </p>
+              </div>
+
+              <div class="p-5 rounded-2xl bg-slate-900 border border-white/10">
+                <span class="text-[10px] uppercase font-bold text-purple-400 block mb-1">Architecture Pillar 3</span>
+                <h4 class="text-sm font-bold text-white mb-2">Candidate-Free Recursive Mining</h4>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                  Recursively constructs conditional FP-Trees for suffix items, mining all 950 frequent itemsets without generating 24.6 million combinatorial candidate pairs.
+                </p>
+              </div>
+            </div>
+
+            <!-- FP-Growth Tree Performance Summary -->
+            <div class="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-slate-300">
+              <div class="flex items-center gap-2 mb-2 text-emerald-300 font-bold uppercase tracking-wider">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                <span>Execution Efficiency Benchmark</span>
+              </div>
+              <p class="leading-relaxed">
+                FP-Growth mined all 950 frequent itemsets in <b>2.829 seconds</b> at 0.3% support, maintaining a strictly bounded memory footprint throughout recursive tree traversal while producing 100% mathematical parity with Apriori.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 8: ALGORITHM COMPARISON -->
+        <div id="subview-benchmark" class="subview space-y-6 sm:space-y-8">
+          <div class="glass-card p-6">
+            <h3 class="text-base sm:text-lg font-bold text-white mb-1">Algorithm Battle Arena: Apriori vs. FP-Growth</h3>
+            <p class="text-xs text-slate-400 mb-6">Tested under identical conditions on 131,209 authentic customer transactions across 4 support thresholds.</p>
+
+            <div class="grid lg:grid-cols-2 gap-8 items-center mb-8">
+              <div class="h-72 sm:h-80">
+                <canvas id="chart-benchmark"></canvas>
+              </div>
+
+              <div class="space-y-3">
+                <div class="p-4 rounded-xl bg-slate-900 border border-emerald-500/30">
+                  <span class="text-xs font-bold uppercase text-emerald-400 flex items-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>FP-Growth (Tree-Based Mining)</span>
+                  </span>
+                  <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Compresses transactions into a compact Frequent Pattern Tree (FP-Tree) and mines recursively without generating candidate itemsets.
+                  </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-900 border border-amber-500/30">
+                  <span class="text-xs font-bold uppercase text-amber-400 flex items-center gap-1.5">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                    <span>Apriori (27.1 GiB RAM Mitigation)</span>
+                  </span>
+                  <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Optimized via downward closure universe reduction (reducing matrix to 54.87 MB) and <code>low_memory=True</code> chunking.
+                  </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-900 border border-cyan-500/30">
+                  <span class="text-xs font-bold uppercase text-cyan-400 flex items-center gap-1.5">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>100% Mathematical Parity</span>
+                  </span>
+                  <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                    Both algorithms produce identical frequent itemsets (151 at 1.0%, 255 at 0.7%, 475 at 0.5%, 950 at 0.3%) and association rules.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Benchmark Table -->
+            <h4 class="text-sm font-bold text-white mb-3">Empirical Execution Time Benchmark Table</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-white/10 text-slate-400 uppercase">
+                    <th class="py-3 px-3">Min Support</th>
+                    <th class="py-3 px-3">FP-Growth Time (s)</th>
+                    <th class="py-3 px-3">Apriori Time (s)</th>
+                    <th class="py-3 px-3">Itemsets Discovered</th>
+                    <th class="py-3 px-3">Rules Count</th>
+                    <th class="py-3 px-3">Parity Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300" id="benchmark-tbody">
+                  <!-- Populated by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 9: RESEARCH REPORTS -->
+        <div id="subview-reports" class="subview space-y-6">
+          <div class="glass-card p-6">
+            <h3 class="text-base sm:text-lg font-bold text-white mb-1">Technical Documentation & Research Reports</h3>
+            <p class="text-xs text-slate-400 mb-6">Complete data audits, mathematical definitions, and algorithm benchmark analysis.</p>
+
+            <div class="flex flex-wrap gap-2 border-b border-white/10 pb-4 mb-6">
+              <button onclick="showReportTab('mba')" id="btn-rep-mba" class="btn-3d px-4 py-2 rounded-xl text-xs font-bold bg-cyan-600 text-white transition-all">
+                Association Rules Technical Report
+              </button>
+              <button onclick="showReportTab('inspection')" id="btn-rep-insp" class="px-4 py-2 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 text-slate-300 transition-all">
+                Dataset Inspection Audit
+              </button>
+            </div>
+
+            <div id="report-content-container" class="prose prose-invert max-w-none text-xs text-slate-300 p-4 rounded-2xl bg-slate-900/90 border border-white/10 max-h-[600px] overflow-y-auto leading-relaxed">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 10: SMART BASKET RECOMMENDER SIMULATOR -->
+        <div id="subview-simulator" class="subview space-y-6 sm:space-y-8">
+          <div class="glass-card p-6">
+            <h3 class="text-base sm:text-lg font-bold text-white mb-1">Smart Basket Recommender Simulator</h3>
+            <p class="text-xs text-slate-400 mb-6">Select products to populate a customer's basket. The engine evaluates all 346 rules in real time to generate cross-sell recommendations.</p>
+
+            <!-- Presets -->
+            <div class="flex flex-wrap items-center gap-2 mb-6">
+              <span class="text-xs text-slate-400 font-bold mr-2">Quick Presets:</span>
+              <button onclick="loadCartPreset(['Organic Raspberries', 'Organic Hass Avocado'])" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-cyan-300 border border-white/10 transition-all">
+                🍓 Organic Fruit Smoothie
+              </button>
+              <button onclick="loadCartPreset(['Limes', 'Organic Avocado'])" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-emerald-300 border border-white/10 transition-all">
+                🥑 Guacamole Prep
+              </button>
+              <button onclick="loadCartPreset(['Yellow Bell Pepper'])" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-amber-300 border border-white/10 transition-all">
+                🫑 Bell Pepper Duo (Lift 20.72x)
+              </button>
+              <button onclick="loadCartPreset(['Organic Garlic', 'Organic Yellow Onion'])" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-purple-300 border border-white/10 transition-all">
+                🧄 Kitchen Aromatics
+              </button>
+            </div>
+
+            <!-- Cart Layout -->
+            <div class="grid lg:grid-cols-3 gap-6">
+              <!-- Catalog Picker -->
+              <div class="glass-card p-5 rounded-2xl border border-white/10">
+                <span class="text-xs font-bold text-white uppercase block mb-3">Available Catalog Products</span>
+                <input type="text" id="sim-product-search" placeholder="Search product..." oninput="filterCatalogProducts()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white mb-3 focus:outline-none focus:border-cyan-400">
+                <div class="space-y-1.5 max-h-72 overflow-y-auto pr-1" id="catalog-products-list">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <!-- Customer Current Cart -->
+              <div class="glass-card p-5 rounded-2xl border border-white/10">
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold text-white uppercase">Customer's Basket (<span id="cart-count">0</span> items)</span>
+                  <button onclick="clearCart()" class="text-[11px] text-rose-400 hover:underline">Clear Basket</button>
+                </div>
+                <div class="space-y-2 max-h-72 overflow-y-auto pr-1" id="cart-items-list">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
+              <!-- Live Recommendations -->
+              <div class="glass-card p-5 rounded-2xl border border-emerald-500/40">
+                <div class="flex items-center gap-2 mb-3">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-emerald-400"></i>
+                  <span class="text-xs font-bold text-white uppercase">Frequently Bought Together</span>
+                </div>
+                <div class="space-y-3 max-h-72 overflow-y-auto pr-1" id="recommendations-list">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 10: CUSTOM DATASET MINER (EVALUATOR SANDBOX) -->
+        <div id="subview-miner" class="subview space-y-6 sm:space-y-8">
+          <!-- Header Banner -->
+          <div class="glass-card p-6 rounded-3xl relative overflow-hidden border border-cyan-500/30">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 mb-2">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  Evaluator Sandbox • Instant In-Browser Apriori
+                </div>
+                <h3 class="text-xl sm:text-2xl font-black text-white">Custom Dataset Uploader & Real-Time Mining Engine</h3>
+                <p class="text-xs sm:text-sm text-slate-300 mt-1">Upload any custom retail transaction CSV or select built-in industry benchmarks to discover frequent patterns and association rules instantly.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="exportCustomRulesCSV()" class="btn-3d px-4 py-2 text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl flex items-center gap-1.5 shadow-emerald-500/20">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>Export Mined Rules (CSV)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sandbox Controls Card -->
+          <div class="glass-card p-6 rounded-3xl space-y-6">
+            <!-- Row 1: Presets & Upload -->
+            <div class="grid lg:grid-cols-12 gap-6">
+              <!-- Left: Presets -->
+              <div class="lg:col-span-6 space-y-3">
+                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <i data-lucide="database" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Select Benchmark Preset</span>
+                </label>
+                <div class="grid grid-cols-3 gap-2">
+                  <button id="preset-btn-groceries" onclick="selectPresetDataset('groceries')" class="px-3 py-3 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition-all text-center">
+                    <span class="block">Kaggle Groceries</span>
+                    <span class="text-[9px] opacity-75 font-normal">80 Baskets</span>
+                  </button>
+                  <button id="preset-btn-bakery" onclick="selectPresetDataset('bakery')" class="px-3 py-3 rounded-xl text-xs font-bold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-all text-center">
+                    <span class="block">European Bakery</span>
+                    <span class="text-[9px] opacity-75 font-normal">45 Baskets</span>
+                  </button>
+                  <button id="preset-btn-tech" onclick="selectPresetDataset('tech')" class="px-3 py-3 rounded-xl text-xs font-bold bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 transition-all text-center">
+                    <span class="block">Tech Retail</span>
+                    <span class="text-[9px] opacity-75 font-normal">40 Baskets</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right: Drag & Drop CSV Uploader -->
+              <div class="lg:col-span-6 space-y-2">
+                <label class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span class="flex items-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4 text-purple-400"></i>
+                    <span>Or Upload Your Own Transaction CSV</span>
+                  </span>
+                  <span class="text-[10px] text-slate-400 font-normal">Format: Items per line OR OrderID,Item</span>
+                </label>
+                <div id="csv-drop-zone" class="border-2 border-dashed border-white/20 hover:border-cyan-400/60 rounded-2xl p-4 text-center cursor-pointer transition-all bg-slate-900/40" onclick="document.getElementById('csv-file-input').click()">
+                  <input type="file" id="csv-file-input" accept=".csv,.txt" class="hidden" onchange="handleCustomCSVUpload(event)">
+                  <i data-lucide="file-up" class="w-6 h-6 text-cyan-400 mx-auto mb-1"></i>
+                  <p class="text-xs font-semibold text-slate-200">Click to browse or drop CSV transaction file here</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Supports line-item baskets or relational tables (InvoiceNo, Description)</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Mining Threshold Sliders -->
+            <div class="grid sm:grid-cols-3 gap-6 border-t border-white/10 pt-6">
+              <!-- Slider 1: Support -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold">
+                  <span class="text-slate-300">Min Support Threshold</span>
+                  <span id="val-min-support" class="text-cyan-400 font-mono">1.0%</span>
+                </div>
+                <input type="range" id="slider-min-support" min="0.5" max="10.0" step="0.1" value="1.0" class="w-full accent-cyan-400 cursor-pointer" oninput="document.getElementById('val-min-support').innerText = this.value + '%'">
+                <p class="text-[10px] text-slate-400">Frequency percentage of total transactions required.</p>
+              </div>
+
+              <!-- Slider 2: Confidence -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold">
+                  <span class="text-slate-300">Min Confidence Threshold</span>
+                  <span id="val-min-conf" class="text-emerald-400 font-mono">20%</span>
+                </div>
+                <input type="range" id="slider-min-conf" min="10" max="90" step="5" value="20" class="w-full accent-emerald-400 cursor-pointer" oninput="document.getElementById('val-min-conf').innerText = this.value + '%'">
+                <p class="text-[10px] text-slate-400">Probability of consequent given antecedent.</p>
+              </div>
+
+              <!-- Slider 3: Lift -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs font-bold">
+                  <span class="text-slate-300">Min Lift Ratio</span>
+                  <span id="val-min-lift" class="text-amber-400 font-mono">1.0x</span>
+                </div>
+                <input type="range" id="slider-min-lift" min="1.0" max="10.0" step="0.1" value="1.0" class="w-full accent-amber-400 cursor-pointer" oninput="document.getElementById('val-min-lift').innerText = parseFloat(this.value).toFixed(1) + 'x'">
+                <p class="text-[10px] text-slate-400">Rule strength multiplier (&gt; 1.0 indicates positive affinity).</p>
+              </div>
+            </div>
+
+            <!-- Run Button Row -->
+            <div class="flex items-center justify-between border-t border-white/10 pt-4">
+              <div class="text-xs text-slate-400 flex items-center gap-2">
+                <span>Active Dataset:</span>
+                <span id="miner-dataset-name" class="font-bold text-white px-2 py-0.5 rounded bg-white/10">Groceries (Kaggle Benchmark)</span>
+              </div>
+              <button onclick="runCustomMining()" class="btn-3d px-6 py-2.5 text-xs font-bold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl flex items-center gap-2 shadow-cyan-500/25">
+                <i data-lucide="play" class="w-4 h-4 text-cyan-200"></i>
+                <span>Run Mining Engine</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 5 Live Metric KPI Cards -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="glass-card p-4 rounded-2xl border-l-4 border-cyan-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Transactions</span>
+              <div id="kpi-miner-tx" class="text-2xl font-black text-white mt-1">80</div>
+              <span class="text-[9px] text-cyan-400 font-semibold">Loaded Baskets</span>
+            </div>
+            <div class="glass-card p-4 rounded-2xl border-l-4 border-indigo-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Unique Items</span>
+              <div id="kpi-miner-items" class="text-2xl font-black text-white mt-1">42</div>
+              <span class="text-[9px] text-indigo-400 font-semibold">Catalog Universe</span>
+            </div>
+            <div class="glass-card p-4 rounded-2xl border-l-4 border-teal-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Frequent Sets</span>
+              <div id="kpi-miner-itemsets" class="text-2xl font-black text-white mt-1">--</div>
+              <span class="text-[9px] text-teal-400 font-semibold">L1 + L2 + L3</span>
+            </div>
+            <div class="glass-card p-4 rounded-2xl border-l-4 border-emerald-500 text-center">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Rules Discovered</span>
+              <div id="kpi-miner-rules" class="text-2xl font-black text-white mt-1">--</div>
+              <span class="text-[9px] text-emerald-400 font-semibold">Pass Thresholds</span>
+            </div>
+            <div class="glass-card p-4 rounded-2xl border-l-4 border-amber-500 text-center col-span-2 md:col-span-1">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Execution Speed</span>
+              <div id="kpi-miner-time" class="text-2xl font-black text-amber-400 mt-1">-- ms</div>
+              <span class="text-[9px] text-amber-400/80 font-semibold">In-Browser Time</span>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="grid lg:grid-cols-2 gap-6">
+            <!-- Chart 1: Item Frequencies -->
+            <div class="glass-card p-5 sm:p-6 rounded-3xl">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="bar-chart-2" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Top Mined Items Frequency</span>
+                </h4>
+                <span class="text-[10px] text-slate-400">Support Count</span>
+              </div>
+              <div class="h-64">
+                <canvas id="chart-miner-top-items"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: Support vs Confidence Scatter -->
+            <div class="glass-card p-5 sm:p-6 rounded-3xl">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i data-lucide="scatter-chart" class="w-4 h-4 text-purple-400"></i>
+                  <span>Support vs. Confidence Distribution</span>
+                </h4>
+                <span class="text-[10px] text-purple-400">Color = Lift Magnitude</span>
+              </div>
+              <div class="h-64">
+                <canvas id="chart-miner-scatter"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discovered Rules Data Table -->
+          <div class="glass-card p-6 rounded-3xl space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 class="text-base font-bold text-white">Discovered Association Rules</h4>
+                <p class="text-xs text-slate-400">Real-time level-wise rule generation with Support, Confidence, Lift, and Leverage metrics.</p>
+              </div>
+              <div class="relative w-full sm:w-64">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                <input type="text" id="miner-rule-search" placeholder="Filter rules..." oninput="filterCustomRules(this.value)" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+              </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-white/10">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-white/10">
+                  <tr>
+                    <th class="py-3 px-3">#</th>
+                    <th class="py-3 px-3">Association Rule (Antecedent &rarr; Consequent)</th>
+                    <th class="py-3 px-3">Support</th>
+                    <th class="py-3 px-3">Confidence</th>
+                    <th class="py-3 px-3">Lift</th>
+                    <th class="py-3 px-3">Leverage</th>
+                  </tr>
+                </thead>
+                <tbody id="miner-rules-tbody" class="divide-y divide-white/5">
+                  <!-- Populated by miner.js -->
+                </tbody>
+              </table>
+              <div id="miner-empty-state" class="hidden text-center py-10 text-slate-400 text-xs">
+                No association rules discovered with current thresholds. Try decreasing Min Support or Min Confidence.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBVIEW 11: RESEARCHER PROFILE -->
+        <div id="subview-profile" class="subview space-y-6">
+          <div class="glass-card p-8 max-w-2xl mx-auto text-center tilt-card" data-tilt data-tilt-max="8">
+            <div class="tilt-inner">
+              <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-cyan-500 to-blue-600 mx-auto flex items-center justify-center text-white text-2xl font-black mb-4 shadow-xl shadow-cyan-500/30" id="profile-avatar">
+                AS
+              </div>
+              <h3 class="text-xl font-bold text-white" id="profile-name">Dr. Arnab Sen</h3>
+              <p class="text-sm text-cyan-400 font-semibold" id="profile-role">Lead Researcher</p>
+              <p class="text-xs text-slate-400 mt-1" id="profile-email">researcher@instacart.ai</p>
+
+              <div class="grid grid-cols-2 gap-4 mt-8 text-left text-xs">
+                <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                  <span class="text-slate-400 block mb-1">Project Assignment:</span>
+                  <b class="text-white">Track C: Project C2</b>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900 border border-white/10">
+                  <span class="text-slate-400 block mb-1">Session Status:</span>
+                  <b class="text-emerald-400 font-bold">Authorized Researcher</b>
+                </div>
+              </div>
+
+              <div class="mt-8">
+                <button onclick="handleLogout()" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 transition-all">
+                  Sign Out of Portal
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- Mobile Bottom Navigation Dock (Thumb Accessible on Mobile) -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-850/95 backdrop-blur-xl border-t border-white/10 z-40 flex items-center justify-around px-2">
+      <a href="#/dashboard" class="flex flex-col items-center justify-center text-[10px] text-slate-400 hover:text-cyan-400 font-semibold">
+        <i data-lucide="layout-dashboard" class="w-5 h-5 mb-1"></i>
+        <span>Overview</span>
+      </a>
+      <a href="#/products" class="flex flex-col items-center justify-center text-[10px] text-slate-400 hover:text-emerald-400 font-semibold">
+        <i data-lucide="tag" class="w-5 h-5 mb-1"></i>
+        <span>Products</span>
+      </a>
+      <a href="#/itemsets" class="flex flex-col items-center justify-center text-[10px] text-slate-400 hover:text-teal-400 font-semibold">
+        <i data-lucide="layers" class="w-5 h-5 mb-1"></i>
+        <span>Itemsets</span>
+      </a>
+      <a href="#/rules" class="flex flex-col items-center justify-center text-[10px] text-slate-400 hover:text-purple-400 font-semibold">
+        <i data-lucide="network" class="w-5 h-5 mb-1"></i>
+        <span>Rules</span>
+      </a>
+      <a href="#/simulator" class="flex flex-col items-center justify-center text-[10px] text-slate-400 hover:text-amber-400 font-semibold">
+        <i data-lucide="shopping-cart" class="w-5 h-5 mb-1"></i>
+        <span>Cart</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="three_scene.js"></script>
+  <script src="miner.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

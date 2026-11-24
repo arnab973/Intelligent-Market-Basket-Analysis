@@ -1,0 +1,5 @@
+min_support,min_support_pct,fpgrowth_time_sec,apriori_time_sec,speedup_factor,frequent_itemsets,association_rules,exact_match
+0.01,1.00%,1.1876,1.0922,0.92,151,29,True
+0.007,0.70%,1.5588,1.2324,0.79,255,65,True
+0.005,0.50%,2.1453,1.9718,0.92,475,148,True
+0.003,0.30%,2.829,2.7858,0.98,950,351,True

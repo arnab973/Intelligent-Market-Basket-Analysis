@@ -1,0 +1,31 @@
+# Datasets & Large Raw Data (instacart CSVs > 100MB exceed GitHub limit)
+dataset/
+*.csv
+!outputs/**/*.csv
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environments & secrets
+.env
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+
